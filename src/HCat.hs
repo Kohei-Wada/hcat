@@ -35,8 +35,6 @@ data ScreenDimensions = ScreenDimensions
   }
   deriving (Show)
 
-data ContinueCancel = Continue | Cancel deriving (Show)
-
 data ScrollCancel = Up | Down | CancelScroll deriving (Show)
 
 runHCat :: IO ()
@@ -116,26 +114,34 @@ getTerminalSize = case SystemInfo.os of
       cols <- readProcess "tput" ["cols"] ""
       return $ ScreenDimensions (read rows) (read cols)
 
-getContinue :: IO ContinueCancel
+getContinue :: IO ScrollCancel
 getContinue = do
   putStrLn "Press Enter to continue, or q to quit"
   hSetBuffering stdin NoBuffering
   hSetEcho stdin False
   input <- hGetChar stdin
   case input of
-    'j' -> return Continue
-    'q' -> return Cancel
+    'k' -> return Up
+    'j' -> return Down
+    'q' -> return CancelScroll
     _ -> getContinue
 
 showPages :: [Text.Text] -> IO ()
 showPages [] = return ()
-showPages (page : pages) = do
+showPages (page : pages) = showPagesHelper (page : pages) []
+
+showPagesHelper :: [Text.Text] -> [Text.Text] -> IO ()
+showPagesHelper [] _ = return () -- all pages shown
+showPagesHelper (page : pages) prevPages = do
   clearScreen
   TextIO.putStrLn page
   continue <- getContinue
   case continue of
-    Continue -> showPages pages
-    Cancel -> return ()
+    Down -> showPagesHelper pages (page : prevPages)
+    Up -> case prevPages of
+      [] -> showPagesHelper (page : pages) []
+      (p : ps) -> showPagesHelper (p : page : pages) ps
+    CancelScroll -> return ()
 
 clearScreen :: IO ()
 clearScreen = BS.putStr "\^[[1J\^[[1;1H"
