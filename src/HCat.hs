@@ -49,14 +49,14 @@ runHCat = withErrorHandling $ do
 
   -- Get the file information
   is <- forM fs fileInfo
-
   -- Get the terminal size
   terminalSize <- getTerminalSize
 
   -- Paginate the contents of the files
   let pss = zipWith (paginate terminalSize) is cs
 
-  forM_ pss showPages
+  -- Concatenate the paginated contents and display them
+  showPages (concat pss)
   where
     handleError :: IOError.IOError -> IO ()
     handleError e = putStrLn $ "Error: " ++ show e
