@@ -4,6 +4,7 @@
 module HCat where
 
 import qualified Control.Exception as Exception
+import Control.Monad
 import qualified Data.ByteString as BS
 import Data.Functor ((<&>))
 import qualified Data.Text as Text
@@ -19,8 +20,8 @@ import System.IO
 import qualified System.IO.Error as IOError
 import qualified System.Info as SystemInfo
 import System.Process (readProcess)
-import Text.Printf (printf)
 import Terminal
+import Text.Printf (printf)
 
 data FileInfo = FileInfo
   { filePath :: FilePath,
@@ -36,18 +37,26 @@ data ScrollCancel = Up | Down | CancelScroll deriving (Show)
 
 runHCat :: IO ()
 runHCat = withErrorHandling $ do
-  f <- do
-    ss <- Env.getArgs
-    eitherToError $ handleArgs ss
+  -- Get the list of files from the command line arguments
+  fs <- do
+    args <- Env.getArgs
+    eitherToError $ handleArgs args
 
-  contents <- do
+  -- Read the contents of the files
+  cs <- forM fs $ \f -> do
     h <- openFile f ReadMode
     TextIO.hGetContents h
 
-  finfo <- fileInfo f
+  -- Get the file information
+  is <- forM fs fileInfo
+
+  -- Get the terminal size
   terminalSize <- getTerminalSize
-  let pages = paginate terminalSize finfo contents
-  showPages pages
+
+  -- Paginate the contents of the files
+  let pss = zipWith (paginate terminalSize) is cs
+
+  forM_ pss showPages
   where
     handleError :: IOError.IOError -> IO ()
     handleError e = putStrLn $ "Error: " ++ show e
@@ -59,11 +68,10 @@ runHCat = withErrorHandling $ do
     eitherToError (Left err) = Exception.throwIO $ IOError.userError $ show err
     eitherToError (Right x) = return x
 
-handleArgs :: [String] -> Either String FilePath
+handleArgs :: [String] -> Either String [FilePath]
 handleArgs args = case args of
-  [x] -> Right x
-  [] -> Left "No file specified"
-  _ -> Left "Too many arguments"
+  [] -> Left "No files specified"
+  xs -> Right xs
 
 wordWrap :: Int -> Text.Text -> [Text.Text]
 wordWrap lineLength lineText
