@@ -11,6 +11,8 @@ import qualified Data.Text.IO as TextIO
 import Data.Time.Clock as Clock
 import qualified Data.Time.Clock.POSIX as PoxixClock
 import Data.Time.Format as TimeFormat
+import Foreign.C.Types (CInt, CShort)
+import Foreign.Ptr (Ptr)
 import qualified System.Directory as Directory
 import qualified System.Environment as Env
 import System.IO
@@ -18,6 +20,7 @@ import qualified System.IO.Error as IOError
 import qualified System.Info as SystemInfo
 import System.Process (readProcess)
 import Text.Printf (printf)
+import Terminal
 
 data FileInfo = FileInfo
   { filePath :: FilePath,
@@ -26,12 +29,6 @@ data FileInfo = FileInfo
     fileReadable :: Bool,
     fileWritable :: Bool,
     fileExecutable :: Bool
-  }
-  deriving (Show)
-
-data ScreenDimensions = ScreenDimensions
-  { screenRows :: Int,
-    screenColumns :: Int
   }
   deriving (Show)
 
@@ -104,15 +101,9 @@ paginate (ScreenDimensions rows cols) finfo text =
 
 getTerminalSize :: IO ScreenDimensions
 getTerminalSize = case SystemInfo.os of
-  "linux" -> tputScreenDimensions
-  "darwin" -> tputScreenDimensions
+  "linux" -> getWindowSize
+  "darwin" -> getWindowSize
   _other -> return $ ScreenDimensions 24 80
-  where
-    tputScreenDimensions :: IO ScreenDimensions
-    tputScreenDimensions = do
-      rows <- readProcess "tput" ["lines"] ""
-      cols <- readProcess "tput" ["cols"] ""
-      return $ ScreenDimensions (read rows) (read cols)
 
 getContinue :: IO ScrollCancel
 getContinue = do
