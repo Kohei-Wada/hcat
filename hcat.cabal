@@ -51,7 +51,7 @@ common warnings
     ghc-options: -Wall
 
 library hcat-lib
-    exposed-modules: HCat
+    exposed-modules: HCat, Terminal
     hs-source-dirs: src
     build-depends: base ^>=4.19.1.0
                  , bytestring
