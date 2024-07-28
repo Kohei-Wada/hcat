@@ -12,8 +12,6 @@ import qualified Data.Text.IO as TextIO
 import Data.Time.Clock as Clock
 import qualified Data.Time.Clock.POSIX as PoxixClock
 import Data.Time.Format as TimeFormat
-import Foreign.C.Types (CInt, CShort)
-import Foreign.Ptr (Ptr)
 import qualified System.Directory as Directory
 import qualified System.Environment as Env
 import System.IO
